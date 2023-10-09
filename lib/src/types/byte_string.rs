@@ -10,6 +10,7 @@ use std::{
     io::{Read, Write},
 };
 
+use base64::{engine::general_purpose::STANDARD, Engine};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::types::{
@@ -216,7 +217,7 @@ impl ByteString {
 
     /// Creates a byte string from a Base64 encoded string
     pub fn from_base64(data: &str) -> Option<ByteString> {
-        if let Ok(bytes) = base64::decode(data) {
+        if let Ok(bytes) = STANDARD.decode(data) {
             Some(Self::from(bytes))
         } else {
             None
@@ -227,9 +228,9 @@ impl ByteString {
     pub fn as_base64(&self) -> String {
         // Base64 encodes the byte string so it can be represented as a string
         if let Some(ref value) = self.value {
-            base64::encode(value)
+            STANDARD.encode(value)
         } else {
-            base64::encode("")
+            STANDARD.encode("")
         }
     }
 

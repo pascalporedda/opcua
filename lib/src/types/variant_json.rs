@@ -22,12 +22,7 @@ use serde::{
 };
 use serde_json::json;
 
-use crate::types::{
-    data_value::DataValue, date_time::DateTime, diagnostic_info::DiagnosticInfo,
-    expanded_node_id::ExpandedNodeId, extension_object::ExtensionObject, guid::Guid,
-    localized_text::LocalizedText, node_id::NodeId, qualified_name::QualifiedName,
-    string::UAString, variant::Variant, ByteString, StatusCode,
-};
+use crate::types::*;
 
 /// This enum represents the scalar "Type" used for JSON serializing of variants as defined in Part 6 5.1.2.
 ///
@@ -448,7 +443,7 @@ impl<'de> serde::de::Visitor<'de> for VariantVisitor {
             )? as f32)),
             t if t == VariantJsonId::Double as u32 => Ok(Variant::Double(Self::numeric_f64(
                 body,
-                "Float",
+                "Double",
                 f64::MIN,
                 f64::MAX,
             )?)),
