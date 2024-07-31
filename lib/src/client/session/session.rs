@@ -155,8 +155,8 @@ impl Session {
         ignore_clock_skew: bool,
         single_threaded_executor: bool,
     ) -> Session
-        where
-            T: Into<UAString>,
+    where
+        T: Into<UAString>,
     {
         let session_name = session_name.into();
 
@@ -209,11 +209,12 @@ impl Session {
             secure_channel.clear_security_token();
         }
 
-        // Create a new session state
-        self.session_state = Arc::new(RwLock::new(SessionState::new(
+        let exisisting_message_queue = self.session_state.read().message_queue.clone();
+        self.session_state = Arc::new(RwLock::new(SessionState::new_with_message_queue(
             self.ignore_clock_skew,
             self.secure_channel.clone(),
             self.subscription_state.clone(),
+            exisisting_message_queue,
         )));
 
         // Keep the existing transport, we should never drop a tokio runtime from a sync function
@@ -254,8 +255,8 @@ impl Session {
     /// * `session_closed_callback` - the session closed callback
     ///
     pub fn set_session_closed_callback<CB>(&mut self, session_closed_callback: CB)
-        where
-            CB: OnSessionClosed + Send + Sync + 'static,
+    where
+        CB: OnSessionClosed + Send + Sync + 'static,
     {
         let mut session_state = trace_write_lock!(self.session_state);
         session_state.set_session_closed_callback(session_closed_callback);
@@ -269,8 +270,8 @@ impl Session {
     /// * `connection_status_callback` - the connection status callback.
     ///
     pub fn set_connection_status_callback<CB>(&mut self, connection_status_callback: CB)
-        where
-            CB: OnConnectionStatusChange + Send + Sync + 'static,
+    where
+        CB: OnConnectionStatusChange + Send + Sync + 'static,
     {
         let mut session_state = trace_write_lock!(self.session_state);
         session_state.set_connection_status_callback(connection_status_callback);
@@ -679,12 +680,15 @@ impl Session {
             }
         };
         // Spawn the task on the alloted runtime
-        let runtime = {
-            let session = trace_read_lock!(session);
-            session.runtime.clone()
-        };
-        let runtime = trace_lock!(runtime);
-        runtime.block_on(task);
+        // let runtime = {
+        //     let session = trace_read_lock!(session);
+        //     session.runtime.clone()
+        // };
+        // let runtime = trace_lock!(runtime);
+        // runtime.block_on(task);
+        //
+
+        tokio::runtime::Runtime::new().unwrap().block_on(task);
     }
 
     /// Polls on the session which basically dispatches any pending
@@ -2398,7 +2402,7 @@ impl AttributeService for Session {
             // Turn the enums into ExtensionObjects
             let history_update_details = history_update_details
                 .iter()
-                .map(|action|ExtensionObject::from(action))
+                .map(|action| ExtensionObject::from(action))
                 .collect::<Vec<ExtensionObject>>();
 
             let request = HistoryUpdateRequest {
